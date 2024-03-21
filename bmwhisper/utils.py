@@ -38,7 +38,7 @@ def uint16_to_fp16(arr: np.ndarray):
 # hard-coded audio hyperparameters
 SAMPLE_RATE = 16000
 N_FFT = 400
-N_MELS = 80
+N_MELS = [80, 128]
 HOP_LENGTH = 160
 CHUNK_LENGTH = 30
 N_SAMPLES = CHUNK_LENGTH * SAMPLE_RATE  # 480000 samples in a 30-second chunk
@@ -116,7 +116,7 @@ def pad_or_trim(array, length: int = N_SAMPLES, *, axis: int = -1):
 
 
 @lru_cache(maxsize=None)
-def mel_filters(device, n_mels: int = N_MELS) -> torch.Tensor:
+def mel_filters(device, n_mels: int = N_MELS[0]) -> torch.Tensor:
     """
     load the mel filterbank matrix for projecting STFT into a Mel spectrogram.
     Allows decoupling librosa dependency; saved using:
@@ -126,16 +126,29 @@ def mel_filters(device, n_mels: int = N_MELS) -> torch.Tensor:
             mel_80=librosa.filters.mel(sr=16000, n_fft=400, n_mels=80),
         )
     """
-    assert n_mels == 80, f"Unsupported n_mels: {n_mels}"
+    assert n_mels in N_MELS, f"Unsupported n_mels: {n_mels}"
     with np.load(
         os.path.join(os.path.dirname(__file__), "assets", "mel_filters.npz")
     ) as f:
         return torch.from_numpy(f[f"mel_{n_mels}"]).to(device)
 
 
+@lru_cache(maxsize=None)
+def mel_filters_np(n_mels: int = N_MELS[0]) -> np.ndarray:
+    """
+    load the mel filterbank matrix for projecting STFT into a Mel spectrogram.
+    Allows decoupling librosa dependency; saved using:
+    """
+    assert n_mels in N_MELS, f"Unsupported n_mels: {n_mels}"
+    with np.load(
+        os.path.join(os.path.dirname(__file__), "assets", "mel_filters.npz")
+    ) as f:
+        return f[f"mel_{n_mels}"]
+
+
 def log_mel_spectrogram(
     audio: Union[str, np.ndarray, torch.Tensor],
-    n_mels: int = N_MELS,
+    n_mels: int = N_MELS[0],
     padding: int = 0,
     device: Optional[Union[str, torch.device]] = None,
 ):

@@ -110,7 +110,8 @@ def transcribe(
     dtype = torch.float16
 
     # Pad 30-seconds of silence to the input audio, for slicing
-    mel = log_mel_spectrogram(audio, padding=N_SAMPLES) # a torch only part beacause of torch.hann_window, torch.stft etc.
+    mel = log_mel_spectrogram(audio, model.dims.n_mels, padding=N_SAMPLES)
+
     content_frames = mel.shape[-1] - N_FRAMES
 
     if decode_options.get("language", None) is None:
@@ -131,8 +132,12 @@ def transcribe(
 
     language: str = decode_options["language"]
     task: str = decode_options.get("task", "transcribe")
-    tokenizer = get_tokenizer(model.is_multilingual, language=language, task=task)
-
+    tokenizer = get_tokenizer(
+        model.is_multilingual,
+        num_languages=model.num_languages,
+        language=language,
+        task=task,
+    )
     if word_timestamps and task == "translate":
         warnings.warn("Word-level timestamps on translations may not be reliable.")
 
@@ -141,7 +146,6 @@ def transcribe(
             [temperature] if isinstance(temperature, (int, float)) else temperature
         )
         decode_result = None
-        # import pdb; pdb.set_trace()
 
         for t in temperatures:
             kwargs = {**decode_options}
@@ -226,7 +230,6 @@ def transcribe(
             mel_segment = pad_or_trim(mel_segment, N_FRAMES).to(dtype)
 
             decode_options["prompt"] = all_tokens[prompt_reset_since:]
-            # import pdb; pdb.set_trace()
             result: DecodingResult = decode_with_fallback(mel_segment)
             tokens = torch.tensor(result.tokens)
             # print(f"result: {result}")

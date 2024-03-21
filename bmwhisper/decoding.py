@@ -56,7 +56,7 @@ def detect_language(
 
         model.combined_whisper_engine.process(model.encoder_engine_graph_name,model.encoder_input_tensors_map,model.encoder_output_tensors_map)
         mel_out_tensor = list(model.encoder_output_tensors_map.values())[0]
-        mel_out = torch.from_numpy(mel_out_tensor.asnumpy())
+        mel_out = torch.from_numpy(uint16_to_fp16(mel_out_tensor.asnumpy()))
 
         model.time += time.time() - start_time
         model.call_encoder += 1
@@ -315,7 +315,6 @@ class BeamSearchDecoder():
             finished_sequences.append(finished)
 
         tokens = torch.tensor(next_tokens, device=tokens.device)
-        # import pdb; pdb.set_trace()
 
         if self_attention_kcache:
             self.inference.rearrange_kv_cache(
@@ -496,7 +495,7 @@ class DecodingTask:
 
         language = options.language or "en"
         tokenizer = get_tokenizer(
-            model.is_multilingual, language=language, task=options.task
+            model.is_multilingual, num_languages=model.num_languages, language=language, task=options.task
         )
         self.tokenizer: Tokenizer = tokenizer
         self.options: DecodingOptions = self._verify_options(options)
@@ -640,7 +639,7 @@ class DecodingTask:
             self.model.combined_whisper_engine.process(self.model.encoder_engine_graph_name, self.model.encoder_input_tensors_map, self.model.encoder_output_tensors_map)
             mel_out_tensor = list(self.model.encoder_output_tensors_map.values())[0]
 
-            audio_features = torch.from_numpy(mel_out_tensor.asnumpy())
+            audio_features = torch.from_numpy(uint16_to_fp16(mel_out_tensor.asnumpy()))
             self.model.call_encoder +=1
             self.model.time += time.time() - start_time
 
@@ -688,7 +687,6 @@ class DecodingTask:
                     positional_embedding_input = self.model.positional_embedding[offset:offset+1]
                     mask = attention_mask_with_kvcache[offset:offset+1].flip(1)
                     mask = mask.reshape(1, 1, *mask.shape).repeat(n_batch, self.n_text_head, 1, 1).permute(0, 2, 1, 3).contiguous()
-                # import pdb; pdb.set_trace()
 
                 if i == 0:
                     start_time = time.time()
@@ -882,7 +880,7 @@ def decode(
     result: Union[DecodingResult, List[DecodingResult]]
         The result(s) of decoding contained in `DecodingResult` dataclass instance(s)
     """
-    # import pdb; pdb.set_trace()
+
     if single := mel.ndim == 2:
         mel = mel.unsqueeze(0)
 
