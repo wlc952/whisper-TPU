@@ -52,23 +52,20 @@ def detect_language(
         mel = mel.numpy().astype(np.float16)
         mel = mel if mel.flags.c_contiguous else np.ascontiguousarray(mel)
 
-        uint16_mel = fp16_cast(mel)
-        model.encoder_input_tensors_map[model.encoder_engine.get_input_names(model.encoder_engine_graph_name)[0]].update_data(uint16_mel);
+        model.encoder_input_tensors_map[model.combined_whisper_engine.get_input_names(model.encoder_engine_graph_name)[0]].update_data(fp16_cast(mel));
 
-        model.encoder_engine.process(model.encoder_engine_graph_name,model.encoder_input_tensors_map,model.encoder_output_tensors_map)
+        model.combined_whisper_engine.process(model.encoder_engine_graph_name,model.encoder_input_tensors_map,model.encoder_output_tensors_map)
         mel_out_tensor = list(model.encoder_output_tensors_map.values())[0]
         mel_out = torch.from_numpy(mel_out_tensor.asnumpy())
 
         model.time += time.time() - start_time
         model.call_encoder += 1
-        # print(f"detect_language encoder time: {time.time() - start_time}")
 
     # forward pass using a single token, startoftranscript
     n_audio = mel_out.shape[0]
     x = torch.tensor([[tokenizer.sot]] * n_audio)  # [n_audio, 1]
     start_time = time.time()
     logits = model.logits(x, mel_out)[:, 0].float()
-    # print(f"logits time: {time.time() - start_time}")
 
     # collect detected languages; suppress all non-language tokens
     mask = torch.ones(logits.shape[-1], dtype=torch.bool)
@@ -152,10 +149,10 @@ class PyTorchInference():
             start_time = time.time()
             indices = np.array(source_indices, dtype=np.int32)
             indices = indices if indices.flags.contiguous else indices.copy()
-            self.model.kvcache_rearrange_input_dict[self.model.kvcache_rearrange_engine_list[0]][self.model.kvcache_rearrange_engine_list[0].get_input_names(self.model.kvcache_rearrange_engine_list[0].get_graph_names()[0])[1]].update_data(indices)
 
+            self.model.kvcache_rearrange_input_list[0][self.model.kvcache_rearrange_input_names[1]].update_data(indices)
             for i in range(2 * self.model.dims.n_text_layer):
-                self.model.kvcache_rearrange_engine_list[i].process(self.model.kvcache_rearrange_engine_list[i].get_graph_names()[0], self.model.kvcache_rearrange_input_dict[self.model.kvcache_rearrange_engine_list[i]], self.model.kvcache_rearrange_output_dict[self.model.kvcache_rearrange_engine_list[i]])
+                self.model.combined_whisper_engine.process(self.model.kvcache_rearrange_graph_name, self.model.kvcache_rearrange_input_list[i], self.model.kvcache_rearrange_output_list[i])
 
             self.model.time += time.time() - start_time
             self.model.call_kvcache_rearrange += 2 * self.model.dims.n_text_layer
@@ -638,12 +635,9 @@ class DecodingTask:
 
             mel = mel.numpy().astype(np.float16)
             mel = mel if mel.flags.c_contiguous else np.ascontiguousarray(mel)
+            self.model.encoder_input_tensors_map[self.model.encoder_input_names[0]].update_data(fp16_cast(mel));
 
-            # sail
-            uint16_mel = fp16_cast(mel)
-            self.model.encoder_input_tensors_map[self.model.encoder_input_names[0]].update_data(uint16_mel);
-
-            self.model.encoder_engine.process(self.model.encoder_engine_graph_name, self.model.encoder_input_tensors_map, self.model.encoder_output_tensors_map)
+            self.model.combined_whisper_engine.process(self.model.encoder_engine_graph_name, self.model.encoder_input_tensors_map, self.model.encoder_output_tensors_map)
             mel_out_tensor = list(self.model.encoder_output_tensors_map.values())[0]
 
             audio_features = torch.from_numpy(mel_out_tensor.asnumpy())
@@ -711,19 +705,15 @@ class DecodingTask:
 
                     self.model.decoder_main_input_tensors_map[self.model.decoder_main_input_names[0]].update_data(tokens_input)
 
-                    uint16_audio_features = fp16_cast(audio_features)
-                    self.model.decoder_main_input_tensors_map[self.model.decoder_main_input_names[1]].update_data(uint16_audio_features)
+                    self.model.decoder_main_input_tensors_map[self.model.decoder_main_input_names[1]].update_data(fp16_cast(audio_features))
 
-                    uint16_positional_embedding_input = fp16_cast(positional_embedding_input)
-                    self.model.decoder_main_input_tensors_map[self.model.decoder_main_input_names[2]].update_data(uint16_positional_embedding_input)
+                    self.model.decoder_main_input_tensors_map[self.model.decoder_main_input_names[2]].update_data(fp16_cast(positional_embedding_input))
 
-                    uint16_mask = fp16_cast(mask)
-                    self.model.decoder_main_input_tensors_map[self.model.decoder_main_input_names[3]].update_data(uint16_mask)
+                    self.model.decoder_main_input_tensors_map[self.model.decoder_main_input_names[3]].update_data(fp16_cast(mask))
 
-                    self.model.decoder_main_engine.process(self.model.decoder_main_graph_name, self.model.decoder_main_input_tensors_map,self.model.decoder_main_output_tensors_map)
+                    self.model.combined_whisper_engine.process(self.model.decoder_main_graph_name, self.model.decoder_main_input_tensors_map,self.model.decoder_main_output_tensors_map)
 
-                    x_tensor = self.model.decoder_main_output_tensors_map[self.model.decoder_main_engine.get_output_names(self.model.decoder_main_graph_name)[0]]
-                    # compare_float16_error(uint16_to_fp16(x_tensor.asnumpy()), x)
+                    x_tensor = self.model.decoder_main_output_tensors_map[self.model.combined_whisper_engine.get_output_names(self.model.decoder_main_graph_name)[0]]
 
                     x = uint16_to_fp16(x_tensor.asnumpy())
                     # get input data for decoder_post
@@ -731,12 +721,11 @@ class DecodingTask:
                     x_sot = x[:, padding_num - initial_tokens_length + self.sot_index:padding_num - initial_tokens_length + self.sot_index + 1].copy()
                     x_last = x[:, -1:].copy()
 
-                    uint16_x_sot = fp16_cast(x_sot)
-                    self.model.decoder_post_input_tensors_map[self.model.decoder_post_input_names[0]].update_data(uint16_x_sot);
-                    uint16_x_last = fp16_cast(x_last)
-                    self.model.decoder_post_input_tensors_map[self.model.decoder_post_input_names[1]].update_data(uint16_x_last);
+                    self.model.decoder_post_input_tensors_map[self.model.decoder_post_input_names[0]].update_data(fp16_cast(x_sot));
 
-                    self.model.decoder_post_engine.process(self.model.decoder_post_graph_name, self.model.decoder_post_input_tensors_map, self.model.decoder_post_output_tensors_map)
+                    self.model.decoder_post_input_tensors_map[self.model.decoder_post_input_names[1]].update_data(fp16_cast(x_last));
+
+                    self.model.combined_whisper_engine.process(self.model.decoder_post_graph_name, self.model.decoder_post_input_tensors_map, self.model.decoder_post_output_tensors_map)
                     logits_tensor = self.model.decoder_post_output_tensors_map[self.model.decoder_post_output_names[0]]
                     no_speech_probs_tensor = self.model.decoder_post_output_tensors_map[self.model.decoder_post_output_names[1]]
 
@@ -759,15 +748,13 @@ class DecodingTask:
 
                     # sail
                     self.model.decoder_loop_input_tensors_map[self.model.decoder_loop_input_names[0]].update_data(tokens_input)
-                    uint16_positional_embedding_input = fp16_cast(positional_embedding_input)
-                    self.model.decoder_loop_input_tensors_map[self.model.decoder_loop_input_names[1]].update_data(uint16_positional_embedding_input)
+                    self.model.decoder_loop_input_tensors_map[self.model.decoder_loop_input_names[1]].update_data(fp16_cast(positional_embedding_input))
                     self.model.decoder_loop_input_tensors_map[self.model.decoder_loop_input_names[1]]
 
-                    uint16_mask = fp16_cast(mask)
-                    self.model.decoder_loop_input_tensors_map[self.model.decoder_loop_input_names[2]].update_data(uint16_mask)
+                    self.model.decoder_loop_input_tensors_map[self.model.decoder_loop_input_names[2]].update_data(fp16_cast(mask))
                     self.model.decoder_loop_input_tensors_map[self.model.decoder_loop_input_names[2]]
 
-                    self.model.decoder_loop_engine.process(self.model.decoder_loop_graph_name, self.model.decoder_loop_input_tensors_map, self.model.decoder_loop_output_tensors_map)
+                    self.model.combined_whisper_engine.process(self.model.decoder_loop_graph_name, self.model.decoder_loop_input_tensors_map, self.model.decoder_loop_output_tensors_map)
 
                     logits_tensor = self.model.decoder_loop_output_tensors_map[self.model.decoder_loop_output_names[0]]
                     logits = torch.from_numpy(uint16_to_fp16(logits_tensor.asnumpy()))
@@ -782,8 +769,7 @@ class DecodingTask:
                 # expand the tokens tensor with the selected next tokens
                 tokens, completed = self.decoder.update(tokens,
                                                         logits.float(),
-                                                        sum_logprobs,
-                                                    )
+                                                        sum_logprobs)
 
                 if completed or tokens.shape[-1] > self.n_ctx:
                     break

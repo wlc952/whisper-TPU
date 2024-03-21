@@ -22,6 +22,19 @@ def exact_div(x, y):
     return x // y
 
 
+def fp16_cast(arr:np.ndarray):
+  if arr.dtype == np.float16:
+    return arr.view(np.uint16)
+  else:
+    return arr
+
+
+def uint16_to_fp16(arr: np.ndarray):
+    if arr.dtype == np.uint16:
+        return arr.view(np.float16)
+    else:
+        return arr
+
 # hard-coded audio hyperparameters
 SAMPLE_RATE = 16000
 N_FFT = 400
@@ -184,9 +197,6 @@ else:
     def make_safe(string):
         # utf-8 can encode any Unicode code point, so no need to do the round-trip encoding
         return string
-
-
-
 
 
 def str2bool(string):
@@ -419,21 +429,6 @@ def get_writer(
         return write_all
 
     return writers[output_format](output_dir)
-
-
-def fp16_cast(arr:np.ndarray):
-  if arr.dtype == np.float16:
-    return arr.view(np.uint16)
-  else:
-    return arr
-
-def uint16_to_fp16(arr: np.ndarray):
-    if arr.dtype == np.uint16:
-        return arr.view(np.float16)
-    else:
-        return arr
-
-
 
 
 def median_filter(x: torch.Tensor, filter_width: int):
