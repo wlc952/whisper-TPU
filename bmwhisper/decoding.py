@@ -1,40 +1,20 @@
-import os
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 import time
-
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from torch.distributions import Categorical
 
-from .audio import CHUNK_LENGTH
+from .utils import CHUNK_LENGTH
 from .tokenizer import Tokenizer, get_tokenizer
-from .utils import compression_ratio
-
-def fp16_cast(arr:np.ndarray):
-  if arr.dtype == np.float16:
-    return arr.view(np.uint16)
-  else:
-    return arr
-
-def uint16_to_fp16(arr: np.ndarray):
-    if arr.dtype == np.uint16:
-        return arr.view(np.float16)
-    else:
-        return arr
-
-def compare_float16_error(arr1, arr2, threshold = 0.005):
-    diff = np.abs(arr1 - arr2)
-    if np.any(diff > threshold):
-        raise ValueError("Error threshold exceeded in float16 comparison")
+from .utils import compression_ratio, fp16_cast, uint16_to_fp16
 
 if TYPE_CHECKING:
     from .model import Whisper
 
-@torch.no_grad()
+
 def detect_language(
     model: "Whisper", mel: Tensor, tokenizer: Tokenizer = None
 ) -> Tuple[Tensor, List[dict]]:
@@ -160,36 +140,13 @@ class DecodingResult:
     compression_ratio: float = np.nan
 
 
-class Inference:
-    def logits(self, tokens: Tensor, audio_features: Tensor) -> Tensor:
-        """Perform a forward pass on the decoder and return per-token logits"""
-        raise NotImplementedError
-
-    def rearrange_kv_cache(
-            self,
-            source_indices,
-            self_attention_kcache: Tensor,
-            self_attention_vcache: Tensor,
-            cross_attention_kcache: Tensor,
-            cross_attention_vcache: Tensor
-        ) -> None:
-        """Update the key-value cache according to the updated beams"""
-        raise NotImplementedError
-
-    def cleanup_caching(self) -> None:
-        """Clean up any resources or hooks after decoding is finished"""
-        pass
-
-
-class PyTorchInference(Inference):
+class PyTorchInference():
     def __init__(self, model: "Whisper", initial_token_length: int):
         self.model: "Whisper" = model
 
     def rearrange_kv_cache(
             self,
-            source_indices,
-            self_attention_kcache: Tuple[Tensor] = None,
-            self_attention_vcache: Tuple[Tensor] = None,
+            source_indices
         ):
         if source_indices != list(range(len(source_indices))):
             start_time = time.time()
@@ -241,43 +198,33 @@ class MaximumLikelihoodRanker(SequenceRanker):
         return [np.argmax(scores(p, l)) for p, l in zip(sum_logprobs, lengths)]
 
 
-class TokenDecoder:
-    def reset(self):
-        """Initialize any stateful variables for decoding a new sequence"""
+class GreedyDecoder():
+    def __init__(self, temperature: float, eot: int):
+        self.temperature = temperature
+        self.eot = eot
 
     def update(
         self,
         tokens: Tensor,
         logits: Tensor,
-        sum_logprobs: Tensor,
+        sum_logprobs: Tensor
     ) -> Tuple[Tensor, bool]:
-        """Specify how to select the next token, based on the current trace and logits
+        if self.temperature == 0:
+            next_tokens = logits.argmax(dim=-1)
+        else:
+            next_tokens = Categorical(logits=logits / self.temperature).sample()
 
-        Parameters
-        ----------
-        tokens : Tensor, shape = (n_batch, current_sequence_length)
-            all tokens in the context so far, including the prefix and sot_sequence tokens
+        logprobs = F.log_softmax(logits.float(), dim=-1)
+        current_logprobs = logprobs[torch.arange(logprobs.shape[0]), next_tokens]
+        sum_logprobs += current_logprobs * (tokens[:, -1] != self.eot)
 
-        logits : Tensor, shape = (n_batch, vocab_size)
-            per-token logits of the probability distribution at the current step
+        next_tokens[tokens[:, -1] == self.eot] = self.eot
+        tokens = torch.cat([tokens, next_tokens[:, None]], dim=-1)
 
-        sum_logprobs : Tensor, shape = (n_batch)
-            cumulative log probabilities for each sequence
+        completed = (tokens[:, -1] == self.eot).all()
+        return tokens, completed
 
-        Returns
-        -------
-        tokens : Tensor, shape = (n_batch, current_sequence_length + 1)
-            the tokens, appended with the selected next token
-
-        completed : bool
-            True if all sequences has reached the end of text
-
-        """
-        raise NotImplementedError
-
-    def finalize(
-        self, tokens: Tensor, sum_logprobs: Tensor
-    ) -> Tuple[Sequence[Sequence[Tensor]], List[List[float]]]:
+    def finalize(self, tokens: Tensor, sum_logprobs: Tensor):
         """Finalize search and return the final candidate sequences
 
         Parameters
@@ -297,49 +244,17 @@ class TokenDecoder:
             sequence of cumulative log probabilities corresponding to the above
 
         """
-        raise NotImplementedError
-
-
-class GreedyDecoder(TokenDecoder):
-    def __init__(self, temperature: float, eot: int):
-        self.temperature = temperature
-        self.eot = eot
-
-    def update(
-        self,
-        tokens: Tensor,
-        logits: Tensor,
-        sum_logprobs: Tensor,
-        self_attention_kcache: Tensor = None,
-        self_attention_vcache: Tensor = None,
-    ) -> Tuple[Tensor, bool]:
-        if self.temperature == 0:
-            next_tokens = logits.argmax(dim=-1)
-        else:
-            next_tokens = Categorical(logits=logits / self.temperature).sample()
-
-        logprobs = F.log_softmax(logits.float(), dim=-1)
-        current_logprobs = logprobs[torch.arange(logprobs.shape[0]), next_tokens]
-        sum_logprobs += current_logprobs * (tokens[:, -1] != self.eot)
-
-        next_tokens[tokens[:, -1] == self.eot] = self.eot
-        tokens = torch.cat([tokens, next_tokens[:, None]], dim=-1)
-
-        completed = (tokens[:, -1] == self.eot).all()
-        return tokens, completed
-
-    def finalize(self, tokens: Tensor, sum_logprobs: Tensor):
         # make sure each sequence has at least one EOT token at the end
         tokens = F.pad(tokens, (0, 1), value=self.eot)
         return tokens, sum_logprobs.tolist()
 
 
-class BeamSearchDecoder(TokenDecoder):
+class BeamSearchDecoder():
     def __init__(
         self,
         beam_size: int,
         eot: int,
-        inference: Inference,
+        inference,
         patience: Optional[float] = None,
     ):
         self.beam_size = beam_size
@@ -432,6 +347,26 @@ class BeamSearchDecoder(TokenDecoder):
         return tokens, completed
 
     def finalize(self, preceding_tokens: Tensor, sum_logprobs: Tensor):
+        """Finalize search and return the final candidate sequences
+
+        Parameters
+        ----------
+        tokens : Tensor, shape = (n_audio, n_group, current_sequence_length)
+            all tokens in the context so far, including the prefix and sot_sequence
+
+        sum_logprobs : Tensor, shape = (n_audio, n_group)
+            cumulative log probabilities for each sequence
+
+        Returns
+        -------
+        tokens : Sequence[Sequence[Tensor]], length = n_audio
+            sequence of Tensors containing candidate token sequences, for each audio input
+
+        sum_logprobs : List[List[float]], length = n_audio
+            sequence of cumulative log probabilities corresponding to the above
+
+        """
+
         # collect all finished sequences, including patience, and add unfinished ones if not enough
         sum_logprobs = sum_logprobs.cpu()
         for i, sequences in enumerate(self.finished_sequences):
@@ -556,9 +491,7 @@ class ApplyTimestampRules(LogitFilter):
 
 
 class DecodingTask:
-    inference: Inference
     sequence_ranker: SequenceRanker
-    decoder: TokenDecoder
     logit_filters: List[LogitFilter]
 
     def __init__(self, model: "Whisper", options: DecodingOptions):
@@ -716,7 +649,6 @@ class DecodingTask:
             audio_features = torch.from_numpy(mel_out_tensor.asnumpy())
             self.model.call_encoder +=1
             self.model.time += time.time() - start_time
-            # print(f"_get_audio_features encoder time: {time.time() - start_time}")
 
         return audio_features
 
@@ -746,7 +678,6 @@ class DecodingTask:
         attention_mask_firstly = torch.empty(padding_num, padding_num).fill_(-10000).triu_(1)
         attention_mask_with_kvcache_max = torch.empty(448, 448).fill_(-10000).triu_(1)
         attention_mask_with_kvcache = attention_mask_with_kvcache_max[-padding_num:, -padding_num:]
-        loop_start_time = time.time()
 
 
         try:
@@ -858,10 +789,8 @@ class DecodingTask:
                     break
         finally:
             pass
-        # print(f'loop cost time: {time.time() - loop_start_time}')
         return tokens, sum_logprobs, no_speech_probs
 
-    @torch.no_grad()
     def run(self, mel: Tensor) -> List[DecodingResult]:
         self.decoder.reset()
         tokenizer: Tokenizer = self.tokenizer
@@ -942,7 +871,6 @@ class DecodingTask:
         ]
 
 
-@torch.no_grad()
 def decode(
     model: "Whisper",
     mel: Tensor,

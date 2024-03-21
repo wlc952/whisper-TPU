@@ -4,7 +4,6 @@ import string
 from dataclasses import dataclass, field
 from functools import cached_property, lru_cache
 from typing import Dict, List, Optional, Tuple
-
 import tiktoken
 
 LANGUAGES = {

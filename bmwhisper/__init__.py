@@ -1,17 +1,11 @@
 import hashlib
-import io
 import os
 import urllib
 import warnings
-from typing import List, Optional, Union
+from typing import List, Union
 
-import torch
 from tqdm import tqdm
-
-from .audio import load_audio, log_mel_spectrogram, pad_or_trim
-from .decoding import DecodingOptions, DecodingResult, decode, detect_language
 from .model import ModelDimensions, Whisper
-from .transcribe import transcribe
 from .version import __version__
 
 _MODELS = {
@@ -119,7 +113,7 @@ def load_model(
     """
 
     name = args["model_name"]
-    
+
     if name == "base":
         dims = ModelDimensions(
             n_mels=80,
@@ -187,9 +181,9 @@ def load_model(
         )
     else:
         raise NotImplementedError("Only \"tiny, base, small, medium, large\" model is supported for inference")
-    
+
     model = Whisper(dims, args)
-    
+
     if name in _MODELS:
         alignment_heads = _ALIGNMENT_HEADS[name]
     elif os.path.isfile(name):

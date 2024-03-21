@@ -8,7 +8,7 @@ import torch
 import tqdm
 import time
 
-from .audio import (
+from .utils import (
     FRAMES_PER_SECOND,
     HOP_LENGTH,
     N_FRAMES,
@@ -18,7 +18,6 @@ from .audio import (
     pad_or_trim,
 )
 from .decoding import DecodingOptions, DecodingResult
-from .timing import add_word_timestamps
 from .tokenizer import LANGUAGES, TO_LANGUAGE_CODE, get_tokenizer
 from .utils import (
     exact_div,
@@ -28,6 +27,7 @@ from .utils import (
     optional_float,
     optional_int,
     str2bool,
+    add_word_timestamps
 )
 
 if TYPE_CHECKING:
@@ -107,7 +107,7 @@ def transcribe(
     A dictionary containing the resulting text ("text") and segment-level details ("segments"), and
     the spoken language ("language"), which is detected when `decode_options["language"]` is None.
     """
-
+    # only float16 now
     dtype = torch.float16
 
     # Pad 30-seconds of silence to the input audio, for slicing
@@ -380,9 +380,10 @@ def cli():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("audio", nargs="+", type=str, help="audio file(s) to transcribe")
     parser.add_argument("--model", default="small", choices=available_models(), help="name of the Whisper model to use")
-    parser.add_argument("--model_dir", type=str, default=None, help="the path to save model files; uses ~/.cache/whisper by default")
     parser.add_argument("--bmodel_dir", type=str, default="./bmodel", help="the path to save model files; uses ./bmodel by default")
-    # parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu", help="device to use for PyTorch inference")
+
+    parser.add_argument('--dev_id', type=int, default=0, help='dev id for sophgo tpu')
+
     parser.add_argument("--output_dir", "-o", type=str, default=".", help="directory to save the outputs")
     parser.add_argument("--output_format", "-f", type=str, default="all", choices=["txt", "vtt", "srt", "tsv", "json", "all"], help="format of the output file; if not specified, all available formats will be produced")
     parser.add_argument("--verbose", type=str2bool, default=True, help="whether to print out the progress and debug messages")
@@ -412,7 +413,6 @@ def cli():
     parser.add_argument("--max_line_count", type=optional_int, default=None, help="(requires --word_timestamps True) the maximum number of lines in a segment")
     parser.add_argument("--threads", type=optional_int, default=0, help="number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS")
     parser.add_argument("--padding_size", type=optional_int, default=448, help="max pre-allocation size for the key-value cache")
-    parser.add_argument("--chip_mode", default="pcie", choices=["pcie", "soc"], help="name of the Whisper model to use")
     parser.add_argument("--loop_profile", action="store_true", help="whether to print loop times")
     # fmt: on
 
@@ -442,8 +442,8 @@ def cli():
 
     from . import load_model
 
-    model = load_model(args) 
-    pop_list = ["model_name", "model_dir", "bmodel_dir", "chip_mode"]
+    model = load_model(args)
+    pop_list = ["model_name", "bmodel_dir", "dev_id"]
     for arg in pop_list:
         args.pop(arg)
 
