@@ -458,8 +458,12 @@ def cli():
     if args["max_line_count"] and not args["max_line_width"]:
         warnings.warn("--max_line_count has no effect without --max_line_width")
     writer_args = {arg: args.pop(arg) for arg in word_options}
-
-    for audio_path in args.pop("audio"):
+    audio_list=args.pop("audio")
+    for audio_path in audio_list:
+        if os.path.isdir(audio_path):
+            all_files = [os.path.join(audio_path, f) for f in os.listdir(audio_path)]
+            audio_list.extend(all_files)
+            continue
         model.init_cnt()
         print()
         print("{:=^100}".format(f" Start "))
