@@ -10,6 +10,7 @@ models/
 datasets/
 dist/
 *.npy
+*.npz
 *.wav
 *.onnx
 *.json
@@ -30,4 +31,5 @@ thumbs.db
 .DS_Store
 .idea
 
+!*/requirements.txt
 !*/assets/*

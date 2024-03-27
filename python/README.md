@@ -12,7 +12,7 @@ python目录下提供了一系列Python例程，具体情况如下：
 
 | 序号 |  Python例程       | 说明                                |
 | ---- | ---------------- | -----------------------------------  |
-| 1    | run.py     | 使用SAIL推理 |
+| 1    |    whisper.py     |         使用SAIL推理            |
 
 
 ## 1. 环境准备
@@ -61,10 +61,10 @@ python例程不需要编译，可以直接运行，PCIe平台和SoC平台的测�
 ### 2.1 参数说明
 
 ```bash
-usage: run.py wavfile/path [--model MODEL][--bmodel_dir BMODEL_DIR] [--dev_id DEV_ID] [--output_dir OUTPUT_DIR] [--output_format OUTPUT_FORMAT]
+usage: whisper.py wavfile/path [--model MODEL][--bmodel_dir BMODEL_DIR] [--dev_id DEV_ID] [--output_dir OUTPUT_DIR] [--output_format OUTPUT_FORMAT]
 --model: 选择模型尺寸 small/base/medium
 --bmodel_dir: 用于推理的bmodel文件夹路径；
---dev_id: 用于推理的tpu设备id；
+--dev_id: 用于推理的tpu设备id，默认为0；
 --output_dir：模型输出的存放路径；
 --output_format: 模型输出的保存格式；
 --help: 输出帮助信息
@@ -74,7 +74,7 @@ usage: run.py wavfile/path [--model MODEL][--bmodel_dir BMODEL_DIR] [--dev_id DE
 
 ```bash
 export PATH=$PATH:/opt/sophon/sophon-ffmpeg-latest/bin
-python3 run.py ../datasets/aishell_S0764/ --model base --output_dir ./result/ --output_format txt
+python3 whisper.py ../datasets/aishell_S0764/ --model base --bmodel_dir ../models/BM1684X --dev_id 0  --output_dir ./result/ --output_format txt
 ```
 
 
