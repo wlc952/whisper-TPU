@@ -47,10 +47,12 @@ chmod -R +x scripts/
 下载的数据包括：
 ```
 ./datasets
-└── aishell_S0764
-    ├── *.wav                                 # 从aishell数据集中抽取的用于测试的音频文件
-    ├── aishell_S0764.list                    # 数据集的描述文件
-    └── ground_truth.txt                      # 数据集标签文件，用于计算精度评价指标
+|── aishell_S0764                             # 从aishell数据集中抽取的用于测试的音频文件
+|   └── *.wav                                 
+├── aishell_S0764.list                        # 从aishell数据集的文件列表
+├── ground_truth.txt                          # 从aishell数据集的预测真实值
+└── test                                      # 测试使用的音频文件
+    └── demo.wav
 ```
 ## 4. 模型编译
 
@@ -176,7 +178,7 @@ cat online_wer | grep "Overall"
 2. 由于SDK版本之间的差异，实测的wer与本表有1%以内的差值是正常的。
 
 ## 7. 性能测试
-|    测试平台   |     测试程序      |           测试模型                  |tpu inference time(s) |cpu inference time(tokens/s)|
+|    测试平台   |     测试程序      |           测试模型                  |tpu inference time(s) |cpu inference time(s)    |
 | -----------  | ---------------- | -----------------------------------| --------------------- | ----------------------- |
 | BM1684X Pcie | run.py           | bmwhisper_base_1684x_f16.bmodel    | 1.21                  | 3.96                    |
 | BM1684X Pcie | run.py           | bmwhisper_small_1684x_f16.bmodel   | 0.89                  | 8.64                    |
