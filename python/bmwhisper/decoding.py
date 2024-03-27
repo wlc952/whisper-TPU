@@ -195,7 +195,67 @@ class MaximumLikelihoodRanker(SequenceRanker):
         return [np.argmax(scores(p, l)) for p, l in zip(sum_logprobs, lengths)]
 
 
-class GreedyDecoder():
+class TokenDecoder:
+    def reset(self):
+        """Initialize any stateful variables for decoding a new sequence"""
+
+    def update(
+        self,
+        tokens: Tensor,
+        logits: Tensor,
+        sum_logprobs: Tensor,
+    ) -> Tuple[Tensor, bool]:
+        """Specify how to select the next token, based on the current trace and logits
+
+        Parameters
+        ----------
+        tokens : Tensor, shape = (n_batch, current_sequence_length)
+            all tokens in the context so far, including the prefix and sot_sequence tokens
+
+        logits : Tensor, shape = (n_batch, vocab_size)
+            per-token logits of the probability distribution at the current step
+
+        sum_logprobs : Tensor, shape = (n_batch)
+            cumulative log probabilities for each sequence
+
+        Returns
+        -------
+        tokens : Tensor, shape = (n_batch, current_sequence_length + 1)
+            the tokens, appended with the selected next token
+
+        completed : bool
+            True if all sequences has reached the end of text
+
+        """
+        raise NotImplementedError
+
+    def finalize(
+        self, tokens: Tensor, sum_logprobs: Tensor
+    ) -> Tuple[Sequence[Sequence[Tensor]], List[List[float]]]:
+        """Finalize search and return the final candidate sequences
+
+        Parameters
+        ----------
+        tokens : Tensor, shape = (n_audio, n_group, current_sequence_length)
+            all tokens in the context so far, including the prefix and sot_sequence
+
+        sum_logprobs : Tensor, shape = (n_audio, n_group)
+            cumulative log probabilities for each sequence
+
+        Returns
+        -------
+        tokens : Sequence[Sequence[Tensor]], length = n_audio
+            sequence of Tensors containing candidate token sequences, for each audio input
+
+        sum_logprobs : List[List[float]], length = n_audio
+            sequence of cumulative log probabilities corresponding to the above
+
+        """
+        raise NotImplementedError
+
+
+
+class GreedyDecoder(TokenDecoder):
     def __init__(self, temperature: float, eot: int):
         self.temperature = temperature
         self.eot = eot
@@ -246,7 +306,7 @@ class GreedyDecoder():
         return tokens, sum_logprobs.tolist()
 
 
-class BeamSearchDecoder():
+class BeamSearchDecoder(TokenDecoder):
     def __init__(
         self,
         beam_size: int,
@@ -488,6 +548,7 @@ class ApplyTimestampRules(LogitFilter):
 
 class DecodingTask:
     sequence_ranker: SequenceRanker
+    decoder: TokenDecoder
     logit_filters: List[LogitFilter]
 
     def __init__(self, model: "Whisper", options: DecodingOptions):

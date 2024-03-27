@@ -39,16 +39,17 @@ chmod -R +x scripts/
 下载的模型包括：
 ```
 ./models
-├──bmwhisper_medium_1684x_f16.bmodel  # whisper-medium模型，模型参数量为769 M
-├──bmwhisper_small_1684x_f16.bmodel  # whisper-small模型，模型参数量为244 M
-└──bmwhisper_base_1684x_f16.bmodel  # whisper-base模型，模型参数量为74 M
+  └── BM1684X
+      ├──bmwhisper_medium_1684x_f16.bmodel  # whisper-medium模型，模型参数量为769 M
+      ├──bmwhisper_small_1684x_f16.bmodel  # whisper-small模型，模型参数量为244 M
+      └──bmwhisper_base_1684x_f16.bmodel  # whisper-base模型，模型参数量为74 M
 ```
 
 下载的数据包括：
 ```
 ./datasets
 |── aishell_S0764                             # 从aishell数据集中抽取的用于测试的音频文件
-|   └── *.wav                                 
+|   └── *.wav
 ├── aishell_S0764.list                        # 从aishell数据集的文件列表
 ├── ground_truth.txt                          # 从aishell数据集的预测真实值
 └── test                                      # 测试使用的音频文件
@@ -110,25 +111,26 @@ mv -r xxxxxxx ./models/onnx
 ```
 下载的模型包括 whisper base/small/medium 的onnx模型：
 ```
-└── onnx
-    ├── decoder_loop_with_kvcache_base_5beam_448pad.onnx
-    ├── decoder_loop_with_kvcache_medium_5beam_448pad.onnx
-    ├── decoder_loop_with_kvcache_small_5beam_448pad.onnx
-    ├── decoder_main_with_kvcache_base_5beam_448pad.onnx
-    ├── decoder_main_with_kvcache_medium_5beam_448pad.onnx
-    ├── decoder_main_with_kvcache_small_5beam_448pad.onnx
-    ├── decoder_post_base_5beam_448pad.onnx
-    ├── decoder_post_medium_5beam_448pad.onnx
-    ├── decoder_post_small_5beam_448pad.onnx
-    ├── encoder_base_5beam_448pad.onnx
-    ├── encoder_medium_5beam_448pad.onnx
-    ├── encoder_small_5beam_448pad.onnx
-    ├── kvcache_rearrange_base_5beam_448pad.onnx
-    ├── kvcache_rearrange_medium_5beam_448pad.onnx
-    ├── kvcache_rearrange_small_5beam_448pad.onnx
-    ├── logits_decoder_base_5beam_448pad.onnx
-    ├── logits_decoder_medium_5beam_448pad.onnx
-    └── logits_decoder_small_5beam_448pad.onnx
+./models
+    └── onnx
+      ├── decoder_loop_with_kvcache_base_5beam_448pad.onnx
+      ├── decoder_loop_with_kvcache_medium_5beam_448pad.onnx
+      ├── decoder_loop_with_kvcache_small_5beam_448pad.onnx
+      ├── decoder_main_with_kvcache_base_5beam_448pad.onnx
+      ├── decoder_main_with_kvcache_medium_5beam_448pad.onnx
+      ├── decoder_main_with_kvcache_small_5beam_448pad.onnx
+      ├── decoder_post_base_5beam_448pad.onnx
+      ├── decoder_post_medium_5beam_448pad.onnx
+      ├── decoder_post_small_5beam_448pad.onnx
+      ├── encoder_base_5beam_448pad.onnx
+      ├── encoder_medium_5beam_448pad.onnx
+      ├── encoder_small_5beam_448pad.onnx
+      ├── kvcache_rearrange_base_5beam_448pad.onnx
+      ├── kvcache_rearrange_medium_5beam_448pad.onnx
+      ├── kvcache_rearrange_small_5beam_448pad.onnx
+      ├── logits_decoder_base_5beam_448pad.onnx
+      ├── logits_decoder_medium_5beam_448pad.onnx
+      └── logits_decoder_small_5beam_448pad.onnx
 ```
 
 ### 4.3 bmodel编译

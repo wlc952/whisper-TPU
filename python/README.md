@@ -73,6 +73,7 @@ usage: run.py wavfile/path [--model MODEL][--bmodel_dir BMODEL_DIR] [--dev_id DE
 ### 2.2 使用方式
 
 ```bash
+export PATH=$PATH:/opt/sophon/sophon-ffmpeg-latest/bin
 python3 run.py ../datasets/aishell_S0764/ --model base --output_dir ./result/ --output_format txt
 ```
 
