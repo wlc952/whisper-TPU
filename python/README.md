@@ -12,7 +12,7 @@ python目录下提供了一系列Python例程，具体情况如下：
 
 | 序号 |  Python例程       | 说明                                |
 | ---- | ---------------- | -----------------------------------  |
-| 1    | chatglm3.py     | 使用SAIL推理 |
+| 1    | run.py     | 使用SAIL推理 |
 
 
 ## 1. 环境准备
@@ -29,7 +29,7 @@ pip3 install -r requirements.txt
 pip3 install dfss --upgrade #安装dfss依赖
 
 #x86 pcie, py38
-python3 -m dfss --url=open@sophgo.com:sophon-demo/Whisper/sail/pcie/sophon-3.7.0-py3-none-any.whl 
+python3 -m dfss --url=open@sophgo.com:sophon-demo/Whisper/sail/pcie/sophon-3.7.0-py3-none-any.whl
 pip3 install sophon-3.7.0-py3-none-any.whl
 
 #arm pcie, py38

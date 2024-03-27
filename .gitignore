@@ -6,6 +6,7 @@ __pycache__/
 .ipynb_checkpoints
 *.bmodel
 onnx_model/
+models/
 dist/
 *.npy
 *.npz
