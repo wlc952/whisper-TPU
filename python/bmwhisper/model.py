@@ -149,6 +149,16 @@ class Whisper():
         self.call_decoder_firstly= 0
         self.call_kvcache_rearrange = 0
 
+    def print_cnt(self):
+        def print_cnt(text, cnt, n):
+            print(f"{text:<{n}} {cnt}")
+        print()
+        print_cnt("Call encoder times:", self.call_encoder, 50)
+        print_cnt("Call logits decoder times:", self.call_logits_decoder, 50)
+        print_cnt("Call decoder firstly times:", self.call_decoder_firstly, 50)
+        print_cnt("Call decoder loop:", self.call_decoder_loop, 50)
+        print_cnt("Call kvcache rearrange times:", self.call_kvcache_rearrange, 50)
+
     def set_alignment_heads(self, dump: bytes):
         array = np.frombuffer(
             gzip.decompress(base64.b85decode(dump)), dtype=bool
