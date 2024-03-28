@@ -10,9 +10,9 @@
 
 python目录下提供了一系列Python例程，具体情况如下：
 
-| 序号 |  Python例程       | 说明                                |
-| ---- | ---------------- | -----------------------------------  |
-| 1    |    whisper.py     |         使用SAIL推理            |
+| 序号  |  Python例程       | 说明                            |
+| ---- | ----------------  | ------------------------------- |
+| 1    |    whisper.py     |         使用SAIL推理             |
 
 
 ## 1. 环境准备
@@ -52,7 +52,7 @@ pip3 install -r requirements.txt
 由于本例程需要的sophon-sail版本较新，这里提供一个可用的sophon-sail whl包，SoC环境可以通过下面的命令下载：
 ```bash
 pip3 install dfss --upgrade
-python3 -m dfss --url=open@sophgo.com:sophon-demo/ChatGLM3/sail/soc/sophon_arm-3.7.0-py3-none-any.whl #arm soc, py38
+python3 -m dfss --url=open@sophgo.com:sophon-demo/Whisper/sail/soc/sophon_arm-3.7.0-py3-none-any.whl #arm soc, py38
 ```
 如果您需要其他版本的sophon-sail，可以参考上一小节，下载源码自己编译。
 
@@ -71,9 +71,18 @@ usage: whisper.py wavfile/path [--model MODEL][--bmodel_dir BMODEL_DIR] [--dev_i
 ```
 
 ### 2.2 使用方式
+测试单个语音文件
+```bash
+export PATH=$PATH:/opt/sophon/sophon-ffmpeg-latest/bin
+
+python3 whisper.py ../datasets/test/demo.wav --model base --bmodel_dir ../models/BM1684X --dev_id 0  --output_dir ./result/ --output_format txt
+```
+
+测试语音数据集
 
 ```bash
 export PATH=$PATH:/opt/sophon/sophon-ffmpeg-latest/bin
+
 python3 whisper.py ../datasets/aishell_S0764/ --model base --bmodel_dir ../models/BM1684X --dev_id 0  --output_dir ./result/ --output_format txt
 ```
 

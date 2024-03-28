@@ -40,10 +40,29 @@ chmod -R +x scripts/
 下载的模型包括：
 ```
 ./models
-  └── BM1684X
-      ├──bmwhisper_medium_1684x_f16.bmodel  # whisper-medium模型，模型参数量为769 M
-      ├──bmwhisper_small_1684x_f16.bmodel  # whisper-small模型，模型参数量为244 M
-      └──bmwhisper_base_1684x_f16.bmodel  # whisper-base模型，模型参数量为74 M
+├── BM1684X
+│   ├── bmwhisper_base_1684x_f16.bmodel # whisper-medium模型，模型参数量为769 M
+│   ├── bmwhisper_medium_1684x_f16.bmodel # whisper-small模型，模型参数量为244 M
+│   └── bmwhisper_small_1684x_f16.bmodel # whisper-base模型，模型参数量为74 M
+└── onnx # whisper的onnx原始模型
+    ├── decoder_loop_with_kvcache_base_5beam_448pad.onnx
+    ├── decoder_loop_with_kvcache_medium_5beam_448pad.onnx
+    ├── decoder_loop_with_kvcache_small_5beam_448pad.onnx
+    ├── decoder_main_with_kvcache_base_5beam_448pad.onnx
+    ├── decoder_main_with_kvcache_medium_5beam_448pad.onnx
+    ├── decoder_main_with_kvcache_small_5beam_448pad.onnx
+    ├── decoder_post_base_5beam_448pad.onnx
+    ├── decoder_post_medium_5beam_448pad.onnx
+    ├── decoder_post_small_5beam_448pad.onnx
+    ├── encoder_base_5beam_448pad.onnx
+    ├── encoder_medium_5beam_448pad.onnx
+    ├── encoder_small_5beam_448pad.onnx
+    ├── kvcache_rearrange_base_5beam_448pad.onnx
+    ├── kvcache_rearrange_medium_5beam_448pad.onnx
+    ├── kvcache_rearrange_small_5beam_448pad.onnx
+    ├── logits_decoder_base_5beam_448pad.onnx
+    ├── logits_decoder_medium_5beam_448pad.onnx
+    └── logits_decoder_small_5beam_448pad.onnx
 ```
 
 下载的数据包括：
@@ -84,7 +103,7 @@ newgrp docker​
 从sftp上获取TPU-MLIR压缩包
 ```bash
 pip3 install dfss --upgrade
-python3 -m dfss xxxxxxxxxxxxxxxxxxxxxxxx
+python3 -m dfss --url=open@sophgo.com:sophon-demo/Whisper/mlir/tpu-mlir_v1.6.135-g12c3f90d8-20240327.tar.gz
 ```
 
 #### 4.1.3 创建并进入docker
@@ -103,14 +122,7 @@ source ./envsetup.sh
 
 
 ### 4.2 获取onnx
-从sftp上获取onnx模型
-```bash
-pip3 install dfss --upgrade
-python3 -m dfss xxxxxxx
-tar zxvf xxxxxxx
-mv -r xxxxxxx ./models/onnx
-```
-下载的模型包括 whisper base/small/medium 的onnx模型：
+使用download.sh脚本下载的模型包括 whisper base/small/medium 的onnx模型：
 ```
 ./models
     └── onnx
@@ -161,7 +173,7 @@ tpu_model --combine all_quant_encoder_base_5beam_448pad_1684x_f16.bmodel all_qua
 然后，使用`tools`目录下的`eval_aishell.py`脚本，将测试生成的txt文件与测试集标签txt文件进行对比，计算出语音识别的评价指标，命令如下：
 ```bash
 # 请根据实际情况修改程序路径和txt文件路径
-python3 tools/eval_aishell.py --char=1 --v=1 datasets/aishell_S0764/ground_truth.txt python/result  > online_wer
+python3 tools/eval_aishell.py --char=1 --v=1 datasets/ground_truth.txt python/result  > online_wer
 cat online_wer | grep "Overall"
 ```
 
@@ -169,27 +181,28 @@ cat online_wer | grep "Overall"
 在aishell数据集上，精度测试结果如下：
 |   测试平台    |    测试程序   |              测试模型                                 | WER    |
 | ------------ | ------------ | ----------------------------------------------------- | ------ |
-| BM1684X Pcie | whisper.py       | bmwhisper_base_1684x_f16.bmodel                       | 2.70%  |
-| BM1684X Pcie | whisper.py       | bmwhisper_small_1684x_f16.bmodel                      | 2.70%  |
-| BM1684X Pcie | whisper.py       | bmwhisper_medium_1684x_f16.bmodel                     | 2.70%  |
-| BM1684X SoC  | whisper.py       | bmwhisper_base_1684x_f16.bmodel                       | 3.45%  |
-| BM1684X SoC  | whisper.py       | bmwhisper_small_1684x_f16.bmodel                      | 3.45%  |
-| BM1684X SoC  | whisper.py       | bmwhisper_medium_1684x_f16.bmodel                     | 3.45%  |
+| BM1684X Pcie | whisper.py   | bmwhisper_base_1684x_f16.bmodel                       | 17.80% |
+| BM1684X Pcie | whisper.py   | bmwhisper_small_1684x_f16.bmodel                      | 9.44%  |
+| BM1684X Pcie | whisper.py   | bmwhisper_medium_1684x_f16.bmodel                     | 5.88%  |
+| BM1684X SoC  | whisper.py   | bmwhisper_base_1684x_f16.bmodel                       | 17.80% |
+| BM1684X SoC  | whisper.py   | bmwhisper_small_1684x_f16.bmodel                      | 9.44%  |
+| BM1684X SoC  | whisper.py   | bmwhisper_medium_1684x_f16.bmodel                     | 5.88%  |
 
 > **测试说明**：
 1. 在使用的模型相同的情况下，wer在不同的测试平台上是相同的。
 2. 由于SDK版本之间的差异，实测的wer与本表有1%以内的差值是正常的。
 
 ## 7. 性能测试
-|    测试平台   |     测试程序      |           测试模型                  |tpu inference time(s) |cpu inference time(s)    |
-| -----------  | ---------------- | -----------------------------------| --------------------- | ----------------------- |
-| BM1684X Pcie | whisper.py           | bmwhisper_base_1684x_f16.bmodel    | 1.21                  | 3.96                    |
-| BM1684X Pcie | whisper.py           | bmwhisper_small_1684x_f16.bmodel   | 0.89                  | 8.64                    |
-| BM1684X Pcie | whisper.py           | bmwhisper_medium_1684x_f16.bmodel  | 0.89                  | 14.24                   |
-| BM1684X SoC  | whisper.py           | bmwhisper_base_1684x_f16.bmodel    | 1.59                  | 3.78                    |
-| BM1684X SoC  | whisper.py           | bmwhisper_small_1684x_f16.bmodel   | 1.22                  | 8.12                    |
-| BM1684X SoC  | whisper.py           | bmwhisper_medium_1684x_f16.bmodel  | 1.22                  | 13.14                   |
+|    测试平台   |     测试程序      |           测试模型                  |  Preprocess time(ms) |    inference time(ms)   |   Postprocess time(ms)   |    Total time(ms)    |
+| -----------  | ---------------- | -----------------------------------| --------------------- | ----------------------- | -------------------------|----------------------|
+| BM1684X Pcie | whisper.py       | bmwhisper_base_1684x_f16.bmodel    | 29.50                 | 56.81                   | 26.40                    | 103.42               |
+| BM1684X Pcie | whisper.py       | bmwhisper_small_1684x_f16.bmodel   | 35.2                  | 168.76                  | 14.04                    | 218.05               |
+| BM1684X Pcie | whisper.py       | bmwhisper_medium_1684x_f16.bmodel  | 0.89                  | 14.24                   | 14.04                    | 218.05               |
+| BM1684X SoC  | whisper.py       | bmwhisper_base_1684x_f16.bmodel    | 1.59                  | 3.78                    | 14.04                    | 218.05               |
+| BM1684X SoC  | whisper.py       | bmwhisper_small_1684x_f16.bmodel   | 1.22                  | 8.12                    | 14.04                    | 218.05               |
+| BM1684X SoC  | whisper.py       | bmwhisper_medium_1684x_f16.bmodel  | 1.22                  | 13.14                   | 14.04                    | 218.05               |
 
 > **测试说明**：
-> 1. 性能测试结果具有一定的波动性，建议多次测试取平均值；
-> 2. BM1684X SoC的主控处理器为8核 ARM A53 42320 DMIPS @2.3GHz。
+> 1. 该性能使用datasets/test/demo.wav音频进行测试，计算后得出平均每秒音频所需推理时间
+> 2. 性能测试结果具有一定的波动性，建议多次测试取平均值；
+> 3. BM1684X SoC的主控处理器为8核 ARM A53 42320 DMIPS @2.3GHz。
