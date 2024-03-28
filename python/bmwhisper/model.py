@@ -128,10 +128,12 @@ class Whisper():
             self.kvcache_rearrange_input_list[i + 1][self.kvcache_rearrange_input_names[1]] = kvcache_rearrange_engine_base_input
 
 
-        self.init_time = time.time() - start_time
-        print(f"\nTPU bmodel init time: {self.init_time}s")
+        model_init_time = time.time() - start_time
+        print(f"\nTPU bmodel init time: {model_init_time}s")
 
-        self.time = 0
+        self.inference_time = 0
+        self.preprocess_time = 0
+        self.postprocess_time = 0
         self.main_loop_cnt = 0
         self.call_encoder = 0
         self.call_logits_decoder= 0
@@ -140,6 +142,11 @@ class Whisper():
         self.call_decoder_with_kvcache = 0
         self.call_kvcache_rearrange = 0
         self.max_ctx = 0
+
+    def init_time(self):
+        self.inference_time = 0
+        self.preprocess_time = 0
+        self.postprocess_time = 0
 
     def init_cnt(self):
         self.main_loop_cnt = 0

@@ -168,12 +168,12 @@ cat online_wer | grep "Overall"
 在aishell数据集上，精度测试结果如下：
 |   测试平台    |    测试程序   |              测试模型                                 | WER    |
 | ------------ | ------------ | ----------------------------------------------------- | ------ |
-| BM1684X Pcie | run.py       | bmwhisper_base_1684x_f16.bmodel                       | 2.70%  |
-| BM1684X Pcie | run.py       | bmwhisper_small_1684x_f16.bmodel                      | 2.70%  |
-| BM1684X Pcie | run.py       | bmwhisper_medium_1684x_f16.bmodel                     | 2.70%  |
-| BM1684X SoC  | run.py       | bmwhisper_base_1684x_f16.bmodel                       | 3.45%  |
-| BM1684X SoC  | run.py       | bmwhisper_small_1684x_f16.bmodel                      | 3.45%  |
-| BM1684X SoC  | run.py       | bmwhisper_medium_1684x_f16.bmodel                     | 3.45%  |
+| BM1684X Pcie | whisper.py       | bmwhisper_base_1684x_f16.bmodel                       | 2.70%  |
+| BM1684X Pcie | whisper.py       | bmwhisper_small_1684x_f16.bmodel                      | 2.70%  |
+| BM1684X Pcie | whisper.py       | bmwhisper_medium_1684x_f16.bmodel                     | 2.70%  |
+| BM1684X SoC  | whisper.py       | bmwhisper_base_1684x_f16.bmodel                       | 3.45%  |
+| BM1684X SoC  | whisper.py       | bmwhisper_small_1684x_f16.bmodel                      | 3.45%  |
+| BM1684X SoC  | whisper.py       | bmwhisper_medium_1684x_f16.bmodel                     | 3.45%  |
 
 > **测试说明**：
 1. 在使用的模型相同的情况下，wer在不同的测试平台上是相同的。
@@ -182,12 +182,12 @@ cat online_wer | grep "Overall"
 ## 7. 性能测试
 |    测试平台   |     测试程序      |           测试模型                  |tpu inference time(s) |cpu inference time(s)    |
 | -----------  | ---------------- | -----------------------------------| --------------------- | ----------------------- |
-| BM1684X Pcie | run.py           | bmwhisper_base_1684x_f16.bmodel    | 1.21                  | 3.96                    |
-| BM1684X Pcie | run.py           | bmwhisper_small_1684x_f16.bmodel   | 0.89                  | 8.64                    |
-| BM1684X Pcie | run.py           | bmwhisper_medium_1684x_f16.bmodel  | 0.89                  | 14.24                   |
-| BM1684X SoC  | run.py           | bmwhisper_base_1684x_f16.bmodel    | 1.59                  | 3.78                    |
-| BM1684X SoC  | run.py           | bmwhisper_small_1684x_f16.bmodel   | 1.22                  | 8.12                    |
-| BM1684X SoC  | run.py           | bmwhisper_medium_1684x_f16.bmodel  | 1.22                  | 13.14                   |
+| BM1684X Pcie | whisper.py           | bmwhisper_base_1684x_f16.bmodel    | 1.21                  | 3.96                    |
+| BM1684X Pcie | whisper.py           | bmwhisper_small_1684x_f16.bmodel   | 0.89                  | 8.64                    |
+| BM1684X Pcie | whisper.py           | bmwhisper_medium_1684x_f16.bmodel  | 0.89                  | 14.24                   |
+| BM1684X SoC  | whisper.py           | bmwhisper_base_1684x_f16.bmodel    | 1.59                  | 3.78                    |
+| BM1684X SoC  | whisper.py           | bmwhisper_small_1684x_f16.bmodel   | 1.22                  | 8.12                    |
+| BM1684X SoC  | whisper.py           | bmwhisper_medium_1684x_f16.bmodel  | 1.22                  | 13.14                   |
 
 > **测试说明**：
 > 1. 性能测试结果具有一定的波动性，建议多次测试取平均值；

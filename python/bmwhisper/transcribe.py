@@ -109,6 +109,7 @@ def transcribe(
     # only float16 now
     dtype = torch.float16
 
+    start_time = time.time()
     # Pad 30-seconds of silence to the input audio, for slicing
     mel = log_mel_spectrogram(audio, model.dims.n_mels, padding=N_SAMPLES)
 
@@ -140,6 +141,25 @@ def transcribe(
     )
     if word_timestamps and task == "translate":
         warnings.warn("Word-level timestamps on translations may not be reliable.")
+
+    seek = 0
+    input_stride = exact_div(
+        N_FRAMES, model.dims.n_audio_ctx
+    )  # mel frames per output token: 2
+    time_precision = (
+        input_stride * HOP_LENGTH / SAMPLE_RATE
+    )  # time per output token: 0.02 (seconds)
+    all_tokens = []
+    all_segments = []
+    prompt_reset_since = 0
+
+    if initial_prompt is not None:
+        initial_prompt_tokens = tokenizer.encode(" " + initial_prompt.strip())
+        all_tokens.extend(initial_prompt_tokens)
+    else:
+        initial_prompt_tokens = []
+
+    model.preprocess_time += time.time() - start_time
 
     def decode_with_fallback(segment: torch.Tensor) -> DecodingResult:
         temperatures = (
@@ -183,22 +203,6 @@ def transcribe(
 
         return decode_result
 
-    seek = 0
-    input_stride = exact_div(
-        N_FRAMES, model.dims.n_audio_ctx
-    )  # mel frames per output token: 2
-    time_precision = (
-        input_stride * HOP_LENGTH / SAMPLE_RATE
-    )  # time per output token: 0.02 (seconds)
-    all_tokens = []
-    all_segments = []
-    prompt_reset_since = 0
-
-    if initial_prompt is not None:
-        initial_prompt_tokens = tokenizer.encode(" " + initial_prompt.strip())
-        all_tokens.extend(initial_prompt_tokens)
-    else:
-        initial_prompt_tokens = []
 
     def new_segment(
         *, start: float, end: float, tokens: torch.Tensor, result: DecodingResult
@@ -216,6 +220,7 @@ def transcribe(
             "compression_ratio": result.compression_ratio,
             "no_speech_prob": result.no_speech_prob,
         }
+
 
     # show the progress bar when verbose is False (if True, transcribed text will be printed)
     with tqdm.tqdm(
@@ -464,22 +469,26 @@ def cli():
             all_files = [os.path.join(audio_path, f) for f in os.listdir(audio_path)]
             audio_list.extend(all_files)
             continue
-        model.init_cnt()
         print()
         print("{:=^100}".format(f" Start "))
         print(f"### audio_path: {os.path.basename(audio_path)}")
         audio_start_time = time.time()
+        model.init_cnt()
+        model.init_time()
         result = transcribe(model, audio_path, temperature=temperature, **args)
         writer(result, audio_path, writer_args)
-        cpu_time = time.time() - audio_start_time - model.time
+        total_time = time.time() - audio_start_time
+        postprocess_time = total_time - model.preprocess_time - model.inference_time
         if loop_profile:
             model.print_cnt()
         print()
-        print(f"Total tpu inference time: {model.time}s")
-        print(f"Total cpu inference time: {cpu_time}s")
-        print(f"Total time: {cpu_time + model.time}s")
-        model.time = 0
-    print("{:-^100}".format(f"  Total time: {time.time() - start_time} seconds "))
+        print(f"Preprocess time: {model.preprocess_time}s")
+        print(f"Inference time: {model.inference_time}s")
+        print(f"Postprocess time: {postprocess_time}s")
+        print(f"Total time: {total_time}s")
+
+    print("{:=^100}".format(f" End "))
+    print("{:-^100}".format(f" {len(audio_list)} audio(s) total time: {time.time() - start_time} seconds "))
 
 if __name__ == "__main__":
     cli()
