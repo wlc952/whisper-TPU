@@ -478,13 +478,12 @@ def cli():
         result = transcribe(model, audio_path, temperature=temperature, **args)
         writer(result, audio_path, writer_args)
         total_time = time.time() - audio_start_time
-        postprocess_time = total_time - model.preprocess_time - model.inference_time
+        preprocess_time = total_time - model.inference_time
         if loop_profile:
             model.print_cnt()
         print()
-        print(f"Preprocess time: {model.preprocess_time}s")
+        print(f"Preprocess time: {preprocess_time}s")
         print(f"Inference time: {model.inference_time}s")
-        print(f"Postprocess time: {postprocess_time}s")
         print(f"Total time: {total_time}s")
 
     print("{:=^100}".format(f" End "))

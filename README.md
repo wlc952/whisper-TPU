@@ -193,16 +193,16 @@ cat online_wer | grep "Overall"
 2. 由于SDK版本之间的差异，实测的wer与本表有1%以内的差值是正常的。
 
 ## 7. 性能测试
-|    测试平台   |     测试程序      |           测试模型                  |  Preprocess time(ms) |    inference time(ms)   |   Postprocess time(ms)   |    Total time(ms)    |
-| -----------  | ---------------- | -----------------------------------| --------------------- | ----------------------- | -------------------------|----------------------|
-| BM1684X Pcie | whisper.py       | bmwhisper_base_1684x_f16.bmodel    | 29.50                 | 56.81                   | 26.40                    | 103.42               |
-| BM1684X Pcie | whisper.py       | bmwhisper_small_1684x_f16.bmodel   | 35.2                  | 168.76                  | 14.04                    | 218.05               |
-| BM1684X Pcie | whisper.py       | bmwhisper_medium_1684x_f16.bmodel  | 0.89                  | 14.24                   | 14.04                    | 218.05               |
-| BM1684X SoC  | whisper.py       | bmwhisper_base_1684x_f16.bmodel    | 1.59                  | 3.78                    | 14.04                    | 218.05               |
-| BM1684X SoC  | whisper.py       | bmwhisper_small_1684x_f16.bmodel   | 1.22                  | 8.12                    | 14.04                    | 218.05               |
-| BM1684X SoC  | whisper.py       | bmwhisper_medium_1684x_f16.bmodel  | 1.22                  | 13.14                   | 14.04                    | 218.05               |
+|    测试平台   |     测试程序      |           测试模型                  |  Preprocess time(ms) |    Inference time(ms)   |    Total time(ms)    |
+| -----------  | ---------------- | -----------------------------------| --------------------- | ----------------------- |----------------------|
+| BM1684X Pcie | whisper.py       | bmwhisper_base_1684x_f16.bmodel    | 36.56                 | 56.88                   | 93.44                |
+| BM1684X Pcie | whisper.py       | bmwhisper_small_1684x_f16.bmodel   | 73.31                 | 171.38                  | 244.69               |
+| BM1684X Pcie | whisper.py       | bmwhisper_medium_1684x_f16.bmodel  | 81.80                 | 439.11                  | 520.91               |
+| BM1684X SoC  | whisper.py       | bmwhisper_base_1684x_f16.bmodel    | 247.61                | 61.70                   | 309.31               |
+| BM1684X SoC  | whisper.py       | bmwhisper_small_1684x_f16.bmodel   | 268.22                | 179.44                  | 447.66               |
+| BM1684X SoC  | whisper.py       | bmwhisper_medium_1684x_f16.bmodel  | 300.66                | 451.54                  | 752.20               |
 
 > **测试说明**：
 > 1. 该性能使用datasets/test/demo.wav音频进行测试，计算后得出平均每秒音频所需推理时间
-> 2. 性能测试结果具有一定的波动性，建议多次测试取平均值；
+> 2. 性能测试结果具有一定的波动性，实测结果与该表结果有误差属正常现象，建议多次测试取平均值；
 > 3. BM1684X SoC的主控处理器为8核 ARM A53 42320 DMIPS @2.3GHz。
