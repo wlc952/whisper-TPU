@@ -146,6 +146,11 @@ source ./envsetup.sh
       └── logits_decoder_small_5beam_448pad.onnx
 ```
 
+或者从源码导出
+```bash
+./scripts/gen_onnx.sh --model base
+```
+
 ### 4.3 bmodel编译
 目前TPU-MLIR支持1684x对Whisper进行F16量化，使用如下命令生成bmodel。
 ```bash
