@@ -11,10 +11,10 @@ scripts_dir=$(dirname $(readlink -f "$0"))
 
 pushd $scripts_dir
 # datasets
-if [ ! -d "../datasets" ]; 
+if [ ! -d "datasets" ]; 
 then
     python3 -m dfss --url=open@sophgo.com:sophon-demo/Whisper/datasets_240327/datasets.zip
-    unzip datasets.zip -d ../
+    unzip datasets.zip -d .
     rm datasets.zip
 
     echo "datasets download!"
@@ -23,25 +23,21 @@ else
 fi
 
 # models
-if [ ! -d "../models" ]; 
+if [ ! -d "models" ]; 
 then
-    mkdir ../models
+    mkdir models
     python3 -m dfss --url=open@sophgo.com:sophon-demo/Whisper/model_240408/bmodel.zip
-    unzip bmodel.zip -d ../models
+    unzip bmodel.zip -d models
     rm bmodel.zip
     echo "bmodel download!"
-    python3 -m dfss --url=open@sophgo.com:sophon-demo/Whisper/model_240408/onnx.zip
-    unzip onnx.zip -d ../models
-    rm onnx.zip
-    echo "onnx models download!"
 else
     echo "Models folder exist! Remove it if you need to update."
 fi
 # assets
-if [ ! -d "../python/bmwhisper/assets" ]; 
+if [ ! -d "python/bmwhisper/assets" ]; 
 then
     python3 -m dfss --url=open@sophgo.com:sophon-demo/Whisper/model_240408/assets.zip
-    unzip assets.zip -d ../python/bmwhisper
+    unzip assets.zip -d python/bmwhisper
     rm assets.zip
     echo "assets download!"
 else

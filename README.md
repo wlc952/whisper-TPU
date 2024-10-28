@@ -28,7 +28,7 @@ Whisper 是一个开源的深度学习语音识别模型，由 OpenAI 开发，�
 # 安装unzip，若已安装请跳过
 sudo apt install unzip
 chmod -R +x scripts/
-./scripts/download.sh
+./download.sh
 ```
 
 下载的模型包括：
@@ -38,25 +38,6 @@ chmod -R +x scripts/
 │   ├── bmwhisper_base_1684x_f16.bmodel # whisper-medium模型，模型参数量为769 M
 │   ├── bmwhisper_medium_1684x_f16.bmodel # whisper-small模型，模型参数量为244 M
 │   └── bmwhisper_small_1684x_f16.bmodel # whisper-base模型，模型参数量为74 M
-└── onnx # whisper的onnx原始模型
-    ├── decoder_loop_with_kvcache_base_5beam_448pad.onnx
-    ├── decoder_loop_with_kvcache_medium_5beam_448pad.onnx
-    ├── decoder_loop_with_kvcache_small_5beam_448pad.onnx
-    ├── decoder_main_with_kvcache_base_5beam_448pad.onnx
-    ├── decoder_main_with_kvcache_medium_5beam_448pad.onnx
-    ├── decoder_main_with_kvcache_small_5beam_448pad.onnx
-    ├── decoder_post_base_5beam_448pad.onnx
-    ├── decoder_post_medium_5beam_448pad.onnx
-    ├── decoder_post_small_5beam_448pad.onnx
-    ├── encoder_base_5beam_448pad.onnx
-    ├── encoder_medium_5beam_448pad.onnx
-    ├── encoder_small_5beam_448pad.onnx
-    ├── kvcache_rearrange_base_5beam_448pad.onnx
-    ├── kvcache_rearrange_medium_5beam_448pad.onnx
-    ├── kvcache_rearrange_small_5beam_448pad.onnx
-    ├── logits_decoder_base_5beam_448pad.onnx
-    ├── logits_decoder_medium_5beam_448pad.onnx
-    └── logits_decoder_small_5beam_448pad.onnx
 ```
 
 下载的数据包括：
