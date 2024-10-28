@@ -30,6 +30,7 @@ cpp/
 thumbs.db
 .DS_Store
 .idea
-
+*venv
+result
 !*/requirements.txt
 !*/assets/*

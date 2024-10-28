@@ -26,9 +26,10 @@ fi
 if [ ! -d "models" ]; 
 then
     mkdir models
-    python3 -m dfss --url=open@sophgo.com:sophon-demo/Whisper/model_240408/bmodel.zip
-    unzip bmodel.zip -d models
-    rm bmodel.zip
+    mkdir models/BM1684X
+    wget https://modelscope.cn/models/wlc952/aigchub_models/resolve/master/whisper/bmodel_base.tar.gz -O bmodel.tar.gz
+    tar -zxvf bmodel.tar.gz -C models/BM1684X
+    rm bmodel.tar.gz
     echo "bmodel download!"
 else
     echo "Models folder exist! Remove it if you need to update."

@@ -1,43 +1,34 @@
 # Whisper <!-- omit in toc -->
 
-## 目录 <!-- omit in toc -->
-- [1. 简介](#1-简介)
-- [2. 特性](#2-特性)
-- [3. 准备模型与数据](#3-准备模型与数据)
-- [4. 模型编译](#4-模型编译)
-- [5. 例程测试](#5-例程测试)
-- [6. 精度测试](#6-精度测试)
-  - [6.1 测试方法](#61-测试方法)
-  - [6.2 测试结果](#62-测试结果)
-- [7. 性能测试](#7-性能测试)
-
 ## 1. 简介
-Whisper 是一个开源的深度学习语音识别模型，由 OpenAI 开发，它能够实现实时、多语言的语音识别，并支持跨多种环境和设备的灵活部署。本例程对[Whisper官方开源仓库](https://github.com/openai/whisper)中的算法进行移植，使之能在SOPHON BM1684X上进行推理。
+Whisper 是一个开源的深度学习语音识别模型，由 OpenAI 开发，它能够实现实时、多语言的语音识别，并支持跨多种环境和设备的灵活部署。本例程对[Whisper官方开源仓库](https://github.com/openai/whisper)中的算法进行移植，使之能在Airbox上进行推理。
 
 ## 2. 特性
 * 支持BM1684X(x86 PCIe、SoC)
 * 支持FP16(BM1684X)模型编译和推理
 * 支持基于SAIL推理的Python例程
 
-## 3. 准备模型与数据
-该模型目前只支持在1684X上运行，已提供编译好的bmodel，​同时，您需要准备用于测试的数据集。
+## 3. 环境准备与模型、数据下载
 
-​本例程在`scripts`目录下提供了相关模型和数据的下载脚本`download.sh`。
+​本例程在提供了环境配置脚本`prepare.sh`和模型下载脚本`download.sh`。
 
 ```bash
-# 安装unzip，若已安装请跳过
-sudo apt install unzip
-chmod -R +x scripts/
+# （建议）创建虚拟环境
+python3 -m venv myvenv
+source myvenv/bin/activate
+chmod +x prepare.sh
+./prepare.sh
+chmod +x download.sh
 ./download.sh
 ```
 
-下载的模型包括：
+可选的下载模型包括：
 ```
 ./models
-├── BM1684X
-│   ├── bmwhisper_base_1684x_f16.bmodel # whisper-medium模型，模型参数量为769 M
-│   ├── bmwhisper_medium_1684x_f16.bmodel # whisper-small模型，模型参数量为244 M
-│   └── bmwhisper_small_1684x_f16.bmodel # whisper-base模型，模型参数量为74 M
+└── BM1684X
+    ├── bmwhisper_medium_1684x_f16.bmodel # whisper-medium模型，模型参数量为769 M
+    ├── bmwhisper_small_1684x_f16.bmodel # whisper-small模型，模型参数量为244 M
+    └── bmwhisper_base_1684x_f16.bmodel # whisper-base模型，模型参数量为74 M
 ```
 
 下载的数据包括：
@@ -50,44 +41,52 @@ chmod -R +x scripts/
 └── test                                      # 测试使用的音频文件
     └── demo.wav
 ```
-## 4. 模型编译
-此部分请参考[Whisper模型的导出与编译](./docs/Whisper_Export_Guide.md)
 
-## 5. 例程测试
+## 4. 例程测试
 
-- [Python例程](./python/README.md)
+### 4.1 参数说明
 
-## 6. 精度测试
-### 6.1 测试方法
-首先，参考[Python例程](python/README.md#22-测试图片)推理要测试的数据集，生成预测结果至result路径，注意修改数据集(datasets/aishell_S0764)和相关参数。
-然后，使用`tools`目录下的`eval_aishell.py`脚本，将测试生成的txt文件与测试集标签txt文件进行对比，计算出语音识别的评价指标，命令如下：
 ```bash
-# 请根据实际情况修改程序路径和txt文件路径
-python3 tools/eval_aishell.py --char=1 --v=1 datasets/ground_truth.txt python/result  > online_wer
-cat online_wer | grep "Overall"
+usage: whisper.py wavfile/path [--model MODEL] [--bmodel_dir BMODEL_DIR] [--dev_id DEV_ID] [--output_dir OUTPUT_DIR] [--output_format OUTPUT_FORMAT] [--verbose VERBOSE] [--task TASK] [--language LANGUAGE] [--temperature TEMPERATURE] [--best_of BEST_OF] [--beam_size BEAM_SIZE] [--patience PATIENCE] [--length_penalty LENGTH_PENALTY] [--suppress_tokens SUPPRESS_TOKENS] [--initial_prompt INITIAL_PROMPT] [--condition_on_previous_text CONDITION_ON_PREVIOUS_TEXT] [--temperature_increment_on_fallback TEMPERATURE_INCREMENT_ON_FALLBACK] [--compression_ratio_threshold COMPRESSION_RATIO_THRESHOLD] [--logprob_threshold LOGPROB_THRESHOLD] [--no_speech_threshold NO_SPEECH_THRESHOLD] [--word_timestamps WORD_TIMESTAMPS] [--prepend_punctuations PREPEND_PUNCTUATIONS] [--append_punctuations APPEND_PUNCTUATIONS] [--highlight_words HIGHLIGHT_WORDS] [--max_line_width MAX_LINE_WIDTH] [--max_line_count MAX_LINE_COUNT] [--threads THREADS] [--padding_size PADDING_SIZE] [--loop_profile LOOP_PROFILE]
+--model: 选择模型尺寸，可选项为 base/small/medium。默认为 "base"。
+--bmodel_dir: 用于推理的 bmodel 文件夹路径。默认为 "models/BM1684X/"。
+--dev_id: 用于推理的 TPU 设备 ID。默认为 0。
+--output_dir: 模型输出的存放路径。默认为当前目录 "."。
+--output_format: 模型输出的保存格式，可选项为 txt, vtt, srt, tsv, json, all。若未指定，则生成所有可用格式。默认为 "all"。
+--verbose: 是否打印进度和调试信息。接受布尔值。默认为 True。
+--task: 指定执行转录（'transcribe'）或翻译（'translate'）。默认为 "transcribe"。
+--language: 音频中的语言。指定 None 以执行语言检测。默认为 None。可用选项取决于支持的语言。
+--temperature: 用于采样的温度。默认为 0。
+--best_of: 在非零温度下采样时考虑的候选数量。默认为 5。
+--beam_size: 束搜索中的束（beam）数量，仅当温度为零时适用。默认为 5。
+--patience: 在束解码中使用的可选耐心值。默认为 None。
+--length_penalty: 使用的可选令牌长度惩罚系数。默认为 None。
+--suppress_tokens: 在采样过程中要抑制的令牌 ID 的逗号分隔列表。默认为 "-1"。
+--initial_prompt: 提供给第一个窗口的可选提示文本。默认为 None。
+--condition_on_previous_text: 如果为 True，则为下一个窗口提供模型的前一次输出作为提示。默认为 True。
+--temperature_increment_on_fallback: 在回退时增加的温度，用于解码失败。默认为 0.2。
+--compression_ratio_threshold: 如果 gzip 压缩比高于此值，则将解码视为失败。默认为 2.4。
+--logprob_threshold: 如果平均对数概率低于此值，则将解码视为失败。默认为 -1.0。
+--no_speech_threshold: 如果 <|nospeech|> 令牌的概率高于此值且解码因 logprob_threshold 失败，则将该部分视为静默。默认为 0.6。
+--word_timestamps: （实验性功能）提取单词级时间戳并根据它们优化结果。默认为 False。
+--prepend_punctuations: 如果启用了 word_timestamps，则将这些标点符号与下一个单词合并。默认为 ''"'“¿([{—"'。
+--append_punctuations: 如果启用了 word_timestamps，则将这些标点符号与前一个单词合并。默认为 '""'.。,，!！?？:：”)]}、'。
+--highlight_words: （需要 --word_timestamps 为 True）在 srt 和 vtt 格式中为每个单词加下划线，随着它们的发音。默认为 False。
+--max_line_width: （需要 --word_timestamps 为 True）在换行前一行中的最大字符数。默认为 None。
+--max_line_count: （需要 --word_timestamps 为 True）一个片段中的最大行数。默认为 None。
+--threads: PyTorch 在 CPU 推理中使用的线程数；取代 MKL_NUM_THREADS/OMP_NUM_THREADS。默认为 0。
+--padding_size: 键值缓存的最大预分配大小。默认为 448。
+--loop_profile: 是否打印循环时间以用于性能分析。默认为 False。
 ```
 
-### 6.2 测试结果
-在aishell数据集上，精度测试结果如下：
-|   测试平台    |    测试程序   |              测试模型                                 | WER    |
-| ------------ | ------------ | ----------------------------------------------------- | ------ |
-|   SE7-32     | whisper.py   | bmwhisper_base_1684x_f16.bmodel                       | 17.80% |
-|   SE7-32     | whisper.py   | bmwhisper_small_1684x_f16.bmodel                      | 9.44%  |
-|   SE7-32     | whisper.py   | bmwhisper_medium_1684x_f16.bmodel                     | 5.88%  |
+### 4.2 使用方式
 
-> **测试说明**：
-1. 在使用的模型相同的情况下，wer在不同的测试平台上是相同的。
-2. 由于SDK版本之间的差异，实测的wer与本表有1%以内的差值是正常的。
+测试单个语音文件
+```bash
+python3 python/whisper.py datasets/test/demo.wav --model base --bmodel_dir models/BM1684X --dev_id 0  --output_dir result/ --output_format txt
+```
 
-## 7. 性能测试
-|    测试平台   |     测试程序      |           测试模型                  |  Preprocess time(ms) |    Inference time(ms)   |
-| -----------  | ---------------- | -----------------------------------| --------------------- | ----------------------- |
-|   SE7-32     | whisper.py       | bmwhisper_base_1684x_f16.bmodel    | 247.61                | 61.70                   |
-|   SE7-32     | whisper.py       | bmwhisper_small_1684x_f16.bmodel   | 268.22                | 179.44                  |
-|   SE7-32     | whisper.py       | bmwhisper_medium_1684x_f16.bmodel  | 300.66                | 451.54                  |
-
-> **测试说明**：
-> 1. 该性能使用datasets/test/demo.wav音频进行测试，计算后得出平均每秒音频所需推理时间。
-> 2. whisper模型的预处理主要包括加载语音，特征提取等，推理后的结果可直接转换为自然语言，时间可忽略不计，因此无后处理部分时间统计。
-> 3. 性能测试结果具有一定的波动性，实测结果与该表结果有误差属正常现象，建议多次测试取平均值。
-> 4. BM1684X SoC的主控处理器为8核 ARM A53 42320 DMIPS @2.3GHz。
+测试语音数据集
+```bash
+python3 python/whisper.py datasets/aishell_S0764/ --model base --bmodel_dir models/BM1684X --dev_id 0  --output_dir result/ --output_format txt
+```
