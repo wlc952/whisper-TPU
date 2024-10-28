@@ -33,4 +33,4 @@ thumbs.db
 *venv
 result
 !*/requirements.txt
-!*/assets/*
+*/assets/*
