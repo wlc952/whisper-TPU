@@ -394,13 +394,13 @@ def cli():
     # fmt: off
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("audio", nargs="+", type=str, help="audio file(s) to transcribe")
-    parser.add_argument("--model", default="small", choices=available_models(), help="name of the Whisper model to use")
-    parser.add_argument("--bmodel_dir", type=str, default="../models/BM1684X/", help="the path of bmodels; uses ../models/BM1684X/ by default")
+    parser.add_argument("--model", default="base", choices=available_models(), help="name of the Whisper model to use")
+    parser.add_argument("--bmodel_dir", type=str, default="models/BM1684X/", help="the path of bmodels; uses models/BM1684X/ by default")
 
     parser.add_argument('--dev_id', type=int, default=0, help='dev id for sophgo tpu')
 
-    parser.add_argument("--output_dir", "-o", type=str, default=".", help="directory to save the outputs")
-    parser.add_argument("--output_format", "-f", type=str, default="all", choices=["txt", "vtt", "srt", "tsv", "json", "all"], help="format of the output file; if not specified, all available formats will be produced")
+    parser.add_argument("--output_dir", "-o", type=str, default="result", help="directory to save the outputs")
+    parser.add_argument("--output_format", "-f", type=str, default="txt", choices=["txt", "vtt", "srt", "tsv", "json", "all"], help="format of the output file; if not specified, all available formats will be produced")
     parser.add_argument("--verbose", type=str2bool, default=True, help="whether to print out the progress and debug messages")
 
     parser.add_argument("--task", type=str, default="transcribe", choices=["transcribe", "translate"], help="whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')")
